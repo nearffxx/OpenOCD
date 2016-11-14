@@ -1908,6 +1908,69 @@ static int cortex_a_remove_breakpoint(struct target *target, struct breakpoint *
 	return ERROR_OK;
 }
 
+/**
+ * Sets a watchpoint for an Cortex-A target in one of the watchpoint units.  It is
+ * considered a bug to call this function when there are no available watchpoint
+ * units.
+ *
+ * @param target Pointer to an Cortex-A target to set a watchpoint on
+ * @param watchpoint Pointer to the watchpoint to be set
+ * @return Error status if watchpoint set fails or the result of executing the
+ * JTAG queue
+ */
+static int cortex_a_set_watchpoint(struct target *target, struct watchpoint *watchpoint)
+{
+#if 0
+  int retval = ERROR_OK;
+  struct cortex_a_common *cortex_a = target_to_cortex_a(target);
+  int rw_mask = 1;
+  uint32_t mask;
+#endif
+  return ERROR_OK;
+}
+
+/**
+ * Unset an existing watchpoint and clear the used watchpoint unit.
+ *
+ * @param target Pointer to the target to have the watchpoint removed
+ * @param watchpoint Pointer to the watchpoint to be removed
+ * @return Error status while trying to unset the watchpoint or the result of
+ *         executing the JTAG queue
+ */
+static int cortex_a_unset_watchpoint(struct target *target, struct watchpoint *watchpoint)
+{
+  return ERROR_OK;
+}
+
+/**
+ * Add a watchpoint to an Cortex-A target.  If there are no watchpoint units
+ * available, an error response is returned.
+ *
+ * @param target Pointer to the Cortex-A target to add a watchpoint to
+ * @param watchpoint Pointer to the watchpoint to be added
+ * @return Error status while trying to add the watchpoint
+ */
+int cortex_a_add_watchpoint(struct target *target, struct watchpoint *watchpoint)
+{
+  cortex_a_set_watchpoint(target, watchpoint);
+  return ERROR_OK;
+}
+
+/**
+ * Remove a watchpoint from an Cortex-A target.  The watchpoint will be unset and
+ * the used watchpoint unit will be reopened.
+ *
+ * @param target Pointer to the target to remove a watchpoint from
+ * @param watchpoint Pointer to the watchpoint to be removed
+ * @return Result of trying to unset the watchpoint
+ */
+int cortex_a_remove_watchpoint(struct target *target, struct watchpoint *watchpoint)
+{
+  cortex_a_unset_watchpoint(target, watchpoint);
+  return ERROR_OK;
+}
+
+
 /*
  * Cortex-A Reset functions
  */
@@ -3521,8 +3584,8 @@ struct target_type cortexa_target = {
 	.add_context_breakpoint = cortex_a_add_context_breakpoint,
 	.add_hybrid_breakpoint = cortex_a_add_hybrid_breakpoint,
 	.remove_breakpoint = cortex_a_remove_breakpoint,
-	.add_watchpoint = NULL,
-	.remove_watchpoint = NULL,
+	.add_watchpoint = cortex_a_add_watchpoint,
+	.remove_watchpoint = cortex_a_remove_watchpoint,
 
 	.commands = cortex_a_command_handlers,
 	.target_create = cortex_a_target_create,

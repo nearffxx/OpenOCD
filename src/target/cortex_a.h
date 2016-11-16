@@ -71,6 +71,13 @@ struct cortex_a_brp {
 	uint8_t BRPn;
 };
 
+struct cortex_a_wp {
+  int used;
+	uint32_t value;
+	uint32_t control;
+	uint8_t WRPn;
+};
+
 struct cortex_a_common {
 	int common_magic;
 
@@ -92,6 +99,9 @@ struct cortex_a_common {
 	int brp_num;
 	int brp_num_available;
 	struct cortex_a_brp *brp_list;
+	int wp_num;
+	int wp_num_available;
+	struct cortex_a_wp *wp_list;
 
 	/* Use cortex_a_read_regs_through_mem for fast register reads */
 	int fast_reg_read;

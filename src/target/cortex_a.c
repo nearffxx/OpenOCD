@@ -1920,12 +1920,51 @@ static int cortex_a_remove_breakpoint(struct target *target, struct breakpoint *
  */
 static int cortex_a_set_watchpoint(struct target *target, struct watchpoint *watchpoint)
 {
-#if 0
   int retval = ERROR_OK;
+  int wp_i = 0;
+  uint32_t control; //?
   struct cortex_a_common *cortex_a = target_to_cortex_a(target);
-  int rw_mask = 1;
-  uint32_t mask;
-#endif
+  struct armv7a_common *armv7a = &cortex_a->armv7a_common;
+  struct cortex_a_wp *wp_list = cortex_a->wp_list;
+
+  if (watchpoint->set) {
+    LOG_WARNING("watchpoint already set");
+    return retval;
+  }
+  /*check available contect WRPs*/
+  while (wp_list[wp_i].used && (wp_i < cortex_a->wp_num))
+    wp_i++;
+
+  if (wp_i >= cortex_a->wp_num) {
+    LOG_ERROR("ERROR Can not find free Watchpoint Register Pair");
+    return ERROR_FAIL;
+  }
+
+  watchpoint->set = wp_i + 1;
+  control = (0x0C << 24) |
+      ( 0x1FF << 5) |
+      ( 0x3 << 3) |
+      ( 0x3 << 1) | 1;
+  wp_list[wp_i].used = 1;
+  wp_list[wp_i].value = (watchpoint->address & 0xFFFFFFFC);
+  wp_list[wp_i].control = control;
+
+  retval = cortex_a_dap_write_memap_register_u32(target, armv7a->debug_base
+      + CPUDBG_WVR_BASE + 4 * wp_list[wp_i].WRPn,
+      wp_list[wp_i].value);
+  if (retval != ERROR_OK)
+    return retval;
+
+  retval = cortex_a_dap_write_memap_register_u32(target, armv7a->debug_base
+      + CPUDBG_WCR_BASE + 4 * wp_list[wp_i].WRPn,
+      wp_list[wp_i].value);
+  if (retval != ERROR_OK)
+    return retval;
+
+  LOG_DEBUG("wp %i control 0x%0" PRIx32 " value 0x%0" PRIx32, wp_i,
+      wp_list[wp_i].control,
+      wp_list[wp_i].value);
+
   return ERROR_OK;
 }
 
@@ -1952,8 +1991,16 @@ static int cortex_a_unset_watchpoint(struct target *target, struct watchpoint *w
  */
 int cortex_a_add_watchpoint(struct target *target, struct watchpoint *watchpoint)
 {
-  cortex_a_set_watchpoint(target, watchpoint);
-  return ERROR_OK;
+  struct cortex_a_common *cortex_a = target_to_cortex_a(target);
+
+  if ((cortex_a->wp_num_available < 1)) {
+    LOG_INFO("no hardware watchpoint available");
+    return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
+  }
+
+  cortex_a->wp_num_available--;
+
+  return cortex_a_set_watchpoint(target, watchpoint);
 }
 
 /**
@@ -1966,7 +2013,12 @@ int cortex_a_add_watchpoint(struct target *target, struct watchpoint *watchpoint
  */
 int cortex_a_remove_watchpoint(struct target *target, struct watchpoint *watchpoint)
 {
-  cortex_a_unset_watchpoint(target, watchpoint);
+  struct cortex_a_common *cortex_a = target_to_cortex_a(target);
+
+  if (watchpoint->set) {
+    cortex_a->wp_num_available++;
+    cortex_a_unset_watchpoint(target, watchpoint);
+  }
   return ERROR_OK;
 }
 

@@ -67,6 +67,10 @@ static int cortex_a_set_hybrid_breakpoint(struct target *target,
 	struct breakpoint *breakpoint);
 static int cortex_a_unset_breakpoint(struct target *target,
 	struct breakpoint *breakpoint);
+static int cortex_a_set_watchpoint(struct target *target,
+  struct watchpoint *watchpoint);
+static int cortex_a_unset_watchpoint(struct target *target,
+  struct watchpoint *watchpoint);
 static int cortex_a_dap_read_coreregister_u32(struct target *target,
 	uint32_t *value, int regnum);
 static int cortex_a_dap_write_coreregister_u32(struct target *target,

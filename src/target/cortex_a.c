@@ -1963,7 +1963,7 @@ static int cortex_a_set_watchpoint(struct target *target, struct watchpoint *wat
 
   retval = cortex_a_dap_write_memap_register_u32(target, armv7a->debug_base
       + CPUDBG_WCR_BASE + 4 * wp_list[wp_i].WRPn,
-      wp_list[wp_i].value);
+      wp_list[wp_i].control);
   if (retval != ERROR_OK)
     return retval;
 
@@ -3266,6 +3266,20 @@ static int cortex_a_examine_first(struct target *target)
 	}
 
 	LOG_DEBUG("Configured %i hw breakpoints", cortex_a->brp_num);
+
+	/* Setup Watchpoint Register Pairs */
+	cortex_a->wp_num = ((didr >> 28) & 0x0F) + 1;
+	cortex_a->wp_num_available = cortex_a->brp_num;
+	free(cortex_a->wp_list);
+	cortex_a->wp_list = calloc(cortex_a->wp_num, sizeof(struct cortex_a_wp));
+	for (i = 0; i < cortex_a->wp_num; i++) {
+		cortex_a->wp_list[i].used = 0;
+		cortex_a->wp_list[i].value = 0;
+		cortex_a->wp_list[i].control = 0;
+		cortex_a->wp_list[i].WRPn = i;
+	}
+
+	LOG_DEBUG("Configured %i hw watchpoints", cortex_a->wp_num);
 
 	/* select debug_ap as default */
 	swjdp->apsel = armv7a->debug_ap->ap_num;
